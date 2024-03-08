@@ -8,13 +8,14 @@ from SerrureNDL import *
 
 class Bot(commands.Bot):
     def __init__(self) -> None:
-        super().__init__(command_prefix="&", intents=discord.Intents.all())
+        super().__init__(command_prefix="&&", intents=discord.Intents.all())
     
     async def setup_hook(self) -> None:
         await self.tree.sync()
 
     async def on_ready(self) -> None:
         asyncio.create_task(purge_outdated_otp_task())
+        asyncio.create_task(manage_log_task())
         print("Connected")
     
 async def purge_outdated_otp_task():
@@ -23,10 +24,23 @@ async def purge_outdated_otp_task():
         print(f"Purge des otp : {status}")
         await asyncio.sleep(int(os.getenv("PURGE_FREQ"))) # Purge every hour
 
+
+async def manage_log_task():
+    log_file_path = "./log/CodeLog.txt"
+    while True:
+        if os.path.exists(log_file_path):
+            file_size = os.path.getsize(log_file_path)
+            if file_size >= 20*1024*1024: #20 Mb
+                archive_name = 'CodeLog-Archive-{}.bak'.format(datetime.now().strftime('%Y-%m-%d'))
+                archive_path = f"./log/{archive_name}"
+                os.rename(log_file_path, archive_path)
+                with open(log_file_path, 'w') as new_log_file:
+                    print("new log file created")
+        await asyncio.sleep(24*3600) # everyday
+
+
 bot = Bot()
 bot.setup_hook()
-
-
 
 @bot.tree.command(name="owner", description="Donne le pseudo du propriétaire du serveur")
 async def owner_command(interaction: discord.Interaction):
@@ -63,17 +77,40 @@ async def code_ndl(interaction: discord.Interaction):
         name += str(random.randint(1,9))
 
     code = AddOTP_D(name, int(os.getenv("OTP_DURATION")))
+    with open("./log/CodeLog.txt", "a") as f:
+        #append a log line as csv, with time, name, code, valid time
+        f.write(f"{datetime.now()},{name},{code},{os.getenv('OTP_DURATION')}\n")
+
     await interaction.user.send(f"Le code est {code}, il est valide pour {os.getenv('OTP_DURATION')} minutes.")
     await interaction.response.send_message(f"Le code est {code}", ephemeral=True)
 
-@bot.tree.command(name="purge", description="Purge les codes obsolètes - Pas cencé etre utilisé !")
-async def purge_outdated(interaction: discord.Interaction):
-    admin = discord.utils.get(interaction.guild.roles, name="Admin")
-    if not (admin in interaction.user.roles):
-        await interaction.response.send_message("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
+#Purge les codes obsolètes - Pas cencé etre utilisé - Debug
+@bot.command(name="purge")
+async def purge_outdated(ctx):
+    admin = discord.utils.get(ctx.guild.roles, name="Admin")
+    if not (admin in ctx.author.roles):
+        await ctx.send("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
         return
     status = PurgeOutdatedOTP()
-    await interaction.response.send_message(f"{status}", ephemeral=True)
+    await ctx.send(f"{status}", ephemeral=True)
+
+@bot.command(name="getlog")
+async def get_log(ctx):
+    admin = discord.utils.get(ctx.guild.roles, name="Admin")
+    if not (admin in ctx.author.roles):
+        await ctx.send("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
+        return
+    try:
+        with open('./log/CodeLog.txt', 'rb') as fp:
+            file = discord.File(fp, 'CodeLog.txt')
+            await ctx.author.send(file=file)
+    except discord.HTTPException as e:
+        if e.code == 413:
+            await ctx.send("Le fichier est trop volumineux pour être envoyé.", ephemeral=True)
+        else:
+            await ctx.send("Une erreur s'est produite lors de l'envoi du fichier. Veuillez réessayer.", ephemeral=True)
+    except FileNotFoundError:
+        await ctx.send("Aucune log", ephemeral=True)
 
 if __name__ == "__main__":
     bot.run(os.getenv("DISCORD_GARAGEBOT_TOKEN"))
