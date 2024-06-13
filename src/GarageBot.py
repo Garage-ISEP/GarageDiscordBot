@@ -1,10 +1,12 @@
 import discord
 import asyncio
 import os
+import pytz
 from discord.ext import commands
 
 from SerrureNDL import *
 
+paris_timezone = pytz.timezone('Europe/Paris')
 
 class Bot(commands.Bot):
     def __init__(self) -> None:
@@ -89,7 +91,7 @@ async def code_ndl(interaction: discord.Interaction):
     code = AddOTP_D(name, int(os.getenv("OTP_DURATION")))
     with open("./log/CodeLog.txt", "a") as f:
         #append a log line as csv, with time, name, pseudo, id, code, valid time
-        f.write(f"{datetime.now()},{interaction.user.display_name},{interaction.user.name},{interaction.user.id},{code},{os.getenv('OTP_DURATION')}\n")
+        f.write(f"{datetime.now(paris_timezone)},{interaction.user.display_name},{interaction.user.name},{interaction.user.id},{code},{os.getenv('OTP_DURATION')}\n")
 
     await interaction.user.send(f"Le code est {code}, il est valide pour {os.getenv('OTP_DURATION')} minutes.")
     await interaction.response.send_message(f"Le code est {code}", ephemeral=True)

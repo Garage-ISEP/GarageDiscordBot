@@ -2,3 +2,4 @@ discord.py
 asyncio
 requests
 datetime
+pytz
