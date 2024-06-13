@@ -125,6 +125,15 @@ async def get_log(ctx):
     except FileNotFoundError:
         await ctx.send("Aucune log", ephemeral=True)
 
+@bot.command(name="force sync")
+async def force_sync(ctx):
+    admin = discord.utils.get(ctx.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
+    if not (admin in ctx.author.roles):
+        await ctx.send("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
+        return
+    await bot.tree.sync()
+    await ctx.send("Done !", ephemeral=True)
+
 if __name__ == "__main__":
     bot.run(os.getenv("DISCORD_GARAGEBOT_TOKEN"))
     
