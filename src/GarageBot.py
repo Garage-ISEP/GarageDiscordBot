@@ -29,8 +29,8 @@ async def manage_log_task():
     log_file_path = "./log/CodeLog.txt"
     while True:
         if os.path.exists(log_file_path):
-            file_size = os.path.getsize(log_file_path)
-            if file_size >= 20*1024*1024: #20 Mb
+            file_size = os.path.getsize(log_file_path) #return the size in bytes
+            if file_size >= 20*1024*1024: #20 MB
                 archive_name = 'CodeLog-Archive-{}.bak'.format(datetime.now().strftime('%Y-%m-%d'))
                 archive_path = f"./log/{archive_name}"
                 os.rename(log_file_path, archive_path)
@@ -58,11 +58,24 @@ async def addMember_command(interaction: discord.Interaction, pseudo: discord.Us
     auteur = interaction.user
     Prez_Role = discord.utils.get(interaction.guild.roles, name=f"Prez - {role.name}")
     VicePrez_Role = discord.utils.get(interaction.guild.roles, name=f"VicePrez - {role.name}")
-    if not (Prez_Role in auteur.roles or VicePrez_Role in auteur.roles):
+    Admin_Role = discord.utils.get(interaction.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
+    if not (Prez_Role in auteur.roles or VicePrez_Role in auteur.roles or Admin_Role in auteur.roles):
         await interaction.response.send_message("Vous n'avez pas la permission de faire ça. Vous devez être Prez ou VicePrez du lab concerné.", ephemeral=True)
         return
     await pseudo.add_roles(role)
     await pseudo.add_roles(discord.utils.get(interaction.guild.roles, id=int(os.getenv("DISCORD_ROLE_MEMBRE_ID"))))
+    await interaction.response.send_message("Done !", ephemeral=True)
+
+@bot.tree.command(name="remove_member", description="Retire un membre du lab")
+async def removeMember_command(interaction: discord.Interaction, pseudo: discord.User, role: discord.Role):
+    auteur = interaction.user
+    Prez_Role = discord.utils.get(interaction.guild.roles, name=f"Prez - {role.name}")
+    VicePrez_Role = discord.utils.get(interaction.guild.roles, name=f"VicePrez - {role.name}")
+    Admin_Role = discord.utils.get(interaction.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
+    if not (Prez_Role in auteur.roles or VicePrez_Role in auteur.roles or Admin_Role in auteur.roles):
+        await interaction.response.send_message("Vous n'avez pas la permission de faire ça. Vous devez être Prez ou VicePrez du lab concerné.", ephemeral=True)
+        return
+    await pseudo.remove_roles(role)
     await interaction.response.send_message("Done !", ephemeral=True)
 
 @bot.tree.command(name="code_ndl", description="Genere un code pour le local de NDL valide 1h")
@@ -78,8 +91,8 @@ async def code_ndl(interaction: discord.Interaction):
 
     code = AddOTP_D(name, int(os.getenv("OTP_DURATION")))
     with open("./log/CodeLog.txt", "a") as f:
-        #append a log line as csv, with time, name, code, valid time
-        f.write(f"{datetime.now()},{name},{code},{os.getenv('OTP_DURATION')}\n")
+        #append a log line as csv, with time, name, pseudo, id, code, valid time
+        f.write(f"{datetime.now()},{interaction.user.display_name},{interaction.user.name},{interaction.user.id},{code},{os.getenv('OTP_DURATION')}\n")
 
     await interaction.user.send(f"Le code est {code}, il est valide pour {os.getenv('OTP_DURATION')} minutes.")
     await interaction.response.send_message(f"Le code est {code}", ephemeral=True)
@@ -87,7 +100,7 @@ async def code_ndl(interaction: discord.Interaction):
 #Purge les codes obsolètes - Pas cencé etre utilisé - Debug
 @bot.command(name="purge")
 async def purge_outdated(ctx):
-    admin = discord.utils.get(ctx.guild.roles, name="Admin")
+    admin = discord.utils.get(ctx.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
     if not (admin in ctx.author.roles):
         await ctx.send("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
         return
@@ -96,7 +109,7 @@ async def purge_outdated(ctx):
 
 @bot.command(name="getlog")
 async def get_log(ctx):
-    admin = discord.utils.get(ctx.guild.roles, name="Admin")
+    admin = discord.utils.get(ctx.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
     if not (admin in ctx.author.roles):
         await ctx.send("Vous n'avez pas la permission de faire ça. Vous devez être Admin.", ephemeral=True)
         return
