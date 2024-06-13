@@ -1,0 +1,10 @@
+version: "3"
+services:
+  GarageDiscordBot:
+    image: ghcr.io/garage-isep/garagediscordbot:latest
+    container_name: GarageDiscordBot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./log:/bot/log
