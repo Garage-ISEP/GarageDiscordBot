@@ -40,7 +40,7 @@ async def manage_log_task():
 
 
 bot = Bot()
-bot.setup_hook()
+asyncio.create_task(bot.setup_hook())
 
 @bot.tree.command(name="owner", description="Donne le pseudo du propriétaire du serveur")
 async def owner_command(interaction: discord.Interaction):
@@ -125,7 +125,7 @@ async def get_log(ctx):
     except FileNotFoundError:
         await ctx.send("Aucune log", ephemeral=True)
 
-@bot.command(name="force sync")
+@bot.command(name="forcesync")
 async def force_sync(ctx):
     admin = discord.utils.get(ctx.guild.roles, id=int(os.getenv("DISCORD_ROLE_ADMIN_ID")))
     if not (admin in ctx.author.roles):
