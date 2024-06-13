@@ -10,10 +10,8 @@ class Bot(commands.Bot):
     def __init__(self) -> None:
         super().__init__(command_prefix="&&", intents=discord.Intents.all())
     
-    async def setup_hook(self) -> None:
-        await self.tree.sync()
-
     async def on_ready(self) -> None:
+        await self.tree.sync()
         asyncio.create_task(purge_outdated_otp_task())
         asyncio.create_task(manage_log_task())
         print("Connected")
@@ -40,7 +38,6 @@ async def manage_log_task():
 
 
 bot = Bot()
-asyncio.create_task(bot.setup_hook())
 
 @bot.tree.command(name="owner", description="Donne le pseudo du propriétaire du serveur")
 async def owner_command(interaction: discord.Interaction):
