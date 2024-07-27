@@ -17,7 +17,7 @@ class Bot(commands.Bot):
         asyncio.create_task(purge_outdated_otp_task())
         asyncio.create_task(manage_log_task())
 
-        activity = discord.Activity(type=discord.ActivityType.playing, name="dsi test 1")
+        activity = discord.Activity(type=discord.ActivityType.playing, name="Aider les garagistes")
         await self.change_presence(activity=activity)
         print("Connected")
     
