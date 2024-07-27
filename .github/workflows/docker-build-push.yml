@@ -1,4 +1,4 @@
-name: Build and Publish Docker image to GitHub Packages
+name: Build, Publish Docker image to GitHub Packages, and Deploy
 
 on:
   push:
@@ -30,3 +30,8 @@ jobs:
           push: true
           tags: ghcr.io/garage-isep/garagediscordbot:latest
           file: utils/Dockerfile
+
+      - name: Trigger Portainer webhook
+        if: success()
+        run: |
+          curl -X POST https://portainer.garageisep.com/api/webhooks/2bba87cf-9d6c-400a-adc9-1584f3dde017
